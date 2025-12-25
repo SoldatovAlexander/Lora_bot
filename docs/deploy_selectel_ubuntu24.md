@@ -10,6 +10,7 @@ ssh root@SERVER_IP # заменить на свои реквизиты вход�
 ## 1) Обновляем систему
 ```bash
 sudo apt update && sudo apt -y upgrade 
+
 sudo reboot
 ```
 
