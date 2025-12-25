@@ -9,9 +9,9 @@ __pycache__/
 .hf_cache/
 
 # Model weights / adapters (не коммитим в Git)
-model/adapters/*
-!model/adapters/PLACE_ADAPTER_FILES_HERE.txt
+#!model/adapters/*
+#!model/adapters/PLACE_ADAPTER_FILES_HERE.txt
 
 # Grafana/Prometheus data
-prometheus_data/
-grafana_data/
+#prometheus_data/
+#grafana_data/
