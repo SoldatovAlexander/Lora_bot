@@ -1,0 +1,23 @@
+# FastAPI + сервер
+fastapi==0.115.6
+uvicorn[standard]==0.30.6
+
+# Конфиг окружения
+python-dotenv==1.0.1
+
+# Pydantic схемы
+pydantic==2.9.2
+
+# LLM стек (инференс)
+transformers==4.45.2
+peft==0.13.2
+accelerate==0.34.2
+bitsandbytes==0.43.3
+torch>=2.3.0
+
+# Мониторинг
+prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.0
+
+# Утилиты
+requests==2.32.3

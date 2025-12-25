@@ -1,0 +1,4 @@
+Place your PRETRAINED adapter files here:
+- adapter_config.json
+- adapter_model.safetensors (or adapter_model.bin)
+Optional (if present in your artifacts): tokenizer.json, tokenizer_config.json, special_tokens_map.json, chat_template.jinja

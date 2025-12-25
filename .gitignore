@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# HuggingFace cache (по умолчанию)
+.cache/
+.hf_cache/
+
+# Model weights / adapters (не коммитим в Git)
+model/adapters/*
+!model/adapters/PLACE_ADAPTER_FILES_HERE.txt
+
+# Grafana/Prometheus data
+prometheus_data/
+grafana_data/
