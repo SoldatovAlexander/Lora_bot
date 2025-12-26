@@ -9,12 +9,12 @@ python-dotenv==1.0.1
 pydantic==2.9.2
 
 # LLM стек (инференс)
-transformers>=4.55.0
-peft>=0.14
-accelerate==0.34.2
-bitsandbytes==0.43
-torch>=2.3.0
-safetensors>=0.4
+transformers==4.57.3
+peft==0.18.0
+accelerate==1.12.0
+bitsandbytes==0.49.0
+torch==2.9.1
+safetensors==0.7
 
 # Мониторинг
 prometheus-client==0.21.1
