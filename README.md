@@ -5,7 +5,7 @@
 Важно:
 - **обучения нет**
 - мы берём базовую модель `unsloth/llama-3-8b-Instruct-bnb-4bit`
-- накладываем **предобученные** QLoRA/LoRA адаптеры из `./model/adapters`
+- накладываем **предобученные** QLoRA/LoRA адаптеры из `./model/LoRA_outputs`
 - запускаем API + мониторинг (Prometheus/Grafana) через docker-compose
 
 ## Структура
