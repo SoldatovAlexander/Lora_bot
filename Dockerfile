@@ -1,5 +1,5 @@
 # GPU Dockerfile for Ubuntu 24.04 + CUDA runtime
-FROM nvidia/cuda:12.1.1-runtime-ubuntu24.04
+FROM nvidia/cuda:12.4.1-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
@@ -10,6 +10,7 @@ RUN python3 -m pip install --upgrade pip
 
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN python -m pip install -U pip setuptools wheel
 
 COPY . /app
 
