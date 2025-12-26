@@ -9,7 +9,7 @@ from peft import PeftModel
 load_dotenv()
 
 BASE_MODEL_NAME = os.getenv("BASE_MODEL_NAME", "unsloth/llama-3-8b-Instruct-bnb-4bit")
-ADAPTER_DIR_ENV = os.getenv("ADAPTER_DIR", "./model/adapters")
+ADAPTER_DIR_ENV = os.getenv("ADAPTER_DIR", "./model/LoRA_outputs")
 
 # В Docker (и docker-compose) адаптеры монтируются сюда
 ADAPTER_DIR_DOCKER = "/app/model/adapters"
@@ -19,7 +19,7 @@ def resolve_adapter_dir(logger: logging.Logger) -> str:
     """
     Определяем, где лежат адаптеры:
     - в контейнере: /app/model/adapters
-    - локально: путь из ADAPTER_DIR (по умолчанию ./model/adapters)
+    - локально: путь из ADAPTER_DIR (по умолчанию ./model/LoRA_outputs)
     """
     docker_cfg = os.path.join(ADAPTER_DIR_DOCKER, "adapter_config.json")
     local_cfg = os.path.join(ADAPTER_DIR_ENV, "adapter_config.json")
@@ -35,8 +35,8 @@ def resolve_adapter_dir(logger: logging.Logger) -> str:
     # Если адаптеров нет, это критично — сервис не должен молча продолжать.
     raise FileNotFoundError(
         "Не найден adapter_config.json. "
-        "Положите предобученные адаптеры в ./model/adapters (локально) "
-        "или смонтируйте их в /app/model/adapters (Docker)."
+        "Положите предобученные адаптеры в ./model/LoRA_outputs (локально) "
+        "или смонтируйте их в /app/model/LoRA_outputs (Docker)."
     )
 
 
