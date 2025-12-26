@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+.ipynb_checkpoints/
+
+# HuggingFace/Transformers кеши
+.cache/
+**/.cache/
+hf_cache/
+transformers_cache/
+
+
+
+# Логи и прочее
+logs/
+*.log
+
+# Git
+.git/

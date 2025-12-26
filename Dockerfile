@@ -1,5 +1,5 @@
 # GPU Dockerfile for Ubuntu 24.04 + CUDA runtime
-FROM nvidia/cuda:12.4.1-runtime-ubuntu24.04
+FROM nvidia/cuda:12.6.0-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
