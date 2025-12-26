@@ -5,21 +5,21 @@ from typing import Optional, Tuple
 from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
-from unsloth import FastLanguageModel
+
 load_dotenv()
 
-
-
+BASE_MODEL_NAME = os.getenv("BASE_MODEL_NAME", "unsloth/llama-3-8b-Instruct-bnb-4bit")
+ADAPTER_DIR_ENV = os.getenv("ADAPTER_DIR", "./model/adapters")
 
 # В Docker (и docker-compose) адаптеры монтируются сюда
-ADAPTER_DIR_DOCKER = "/app/model/LoRA_outputs"
+ADAPTER_DIR_DOCKER = "/app/model/adapters"
 
 
 def resolve_adapter_dir(logger: logging.Logger) -> str:
     """
     Определяем, где лежат адаптеры:
-    - в контейнере: /app/model/LoRA_outputs
-    - локально: путь из ADAPTER_DIR (по умолчанию ./model/LoRA_outputs)
+    - в контейнере: /app/model/adapters
+    - локально: путь из ADAPTER_DIR (по умолчанию ./model/adapters)
     """
     docker_cfg = os.path.join(ADAPTER_DIR_DOCKER, "adapter_config.json")
     local_cfg = os.path.join(ADAPTER_DIR_ENV, "adapter_config.json")
@@ -40,7 +40,25 @@ def resolve_adapter_dir(logger: logging.Logger) -> str:
     )
 
 
+def load_tokenizer(adapter_dir: str, logger: logging.Logger):
+    """
+    В ваших артефактах токенайзер часто сохранён рядом с адаптером.
+    Поэтому пытаемся загрузить токенайзер из adapter_dir.
+    Если файлов токенайзера нет, откатываемся на BASE_MODEL_NAME.
+    """
+    tokenizer_hint_files = [
+        os.path.join(adapter_dir, "tokenizer.json"),
+        os.path.join(adapter_dir, "tokenizer_config.json"),
+        os.path.join(adapter_dir, "special_tokens_map.json"),
+    ]
+    has_any = any(os.path.exists(p) for p in tokenizer_hint_files)
 
+    if has_any:
+        logger.warning("MODEL: loading tokenizer from adapter_dir=%s", adapter_dir)
+        return AutoTokenizer.from_pretrained(adapter_dir)
+
+    logger.warning("MODEL: tokenizer files not found in adapter_dir; fallback to base model tokenizer: %s", BASE_MODEL_NAME)
+    return AutoTokenizer.from_pretrained(BASE_MODEL_NAME)
 
 
 def load_model_and_tokenizer(logger: Optional[logging.Logger] = None):
@@ -58,29 +76,25 @@ def load_model_and_tokenizer(logger: Optional[logging.Logger] = None):
     logger.warning("MODEL: BASE_MODEL_NAME=%s", BASE_MODEL_NAME)
     logger.warning("MODEL: ADAPTER_DIR=%s", adapter_dir)
 
-    
+    tokenizer = load_tokenizer(adapter_dir, logger)
+
     logger.warning("MODEL: loading base model in 4-bit (first run may download ~16GB)")
-    # Шаг 1. Загружаем базовую 4-битную модель и токенизатор
-    base_model, tokenizer_new = FastLanguageModel.from_pretrained(
-        model_name="unsloth/llama-3-8b-Instruct-bnb-4bit",
-        max_seq_length=MAX_SEQ_LENGTH,   # тот же MAX_SEQ_LENGTH, что и при обучении
-        dtype=None,
+    base_model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL_NAME,
+        device_map="auto",
         load_in_4bit=True,
     )
+
     logger.warning("MODEL: applying PEFT adapters")
-    # Шаг 2. "Обернём" базовую модель в PEFT-модель,
-# подгрузив обученные LoRA-адаптеры из директории LORA_OUTPUT_DIR.
-# Конфиг адаптера (target_modules, r, и т.д.) возьмётся из сохранённых файлов.
     model = PeftModel.from_pretrained(
         base_model,
         adapter_dir,
+        device_map="auto",
     )
 
-
-# Переводим model_new в режим инференса (ускоренный вывод, без градиентов)
-    FastLanguageModel.for_inference(model)
+    model.eval()
     logger.warning("MODEL: ready (eval mode)")
-    return model, tokenizer_new
+    return model, tokenizer
 
 
 def build_llama3_prompt(system_prompt: str, user_prompt: str) -> str:
