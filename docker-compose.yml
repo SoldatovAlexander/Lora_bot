@@ -1,56 +1,74 @@
-version: "3.9"
-
 services:
   app:
-    build: .
-    container_name: uii_llm_app
-    restart: unless-stopped
+    image: uii-llm-api:latest
+    container_name: uii-llm-api
+    ports:
+      - "8000:8000"
     env_file:
       - .env
     environment:
-      # Keep HF cache inside container (optional), and bind-mount a host cache for speed.
-      - HF_HOME=/app/.cache/huggingface
-    ports:
-      - "8000:8000"
+      LOG_LEVEL: "WARNING"
+      BASE_MODEL_NAME: "unsloth/llama-3-8b-Instruct-bnb-4bit"
+      # ВАЖНО: у вас адаптеры лежат в model/LoRA_outputs
+      ADAPTER_DIR: "/app/model/LoRA_outputs"
     volumes:
-      - ./model/adapters:/app/model/adapters:ro
-      - ./.cache:/app/.cache
-    gpus: all
+      - ./model/LoRA_outputs:/app/model/LoRA_outputs:ro
+      # (опционально) кэш HF, чтобы не качать заново
+      - ./hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: uii_prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
     restart: unless-stopped
     depends_on:
       - app
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
+      - dcgm-exporter
 
   grafana:
     image: grafana/grafana:latest
-    container_name: uii_grafana
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Datasource provisioning (у вас файл в корне grafana/)
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      # Dashboard provider provisioning (добавим файл, см. ниже)
+      - ./grafana/dashboard_provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+      # Сами дашборды (у вас json в корне grafana/)
+      - ./grafana:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
     restart: unless-stopped
     depends_on:
       - prometheus
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana_data:/var/lib/grafana
 
   dcgm-exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
-    container_name: uii_dcgm_exporter
-    restart: unless-stopped
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:4.4.2-4.7.1-ubuntu22.04
+    container_name: dcgm-exporter
     ports:
       - "9400:9400"
-    gpus: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
 
 volumes:
-  prometheus_data:
   grafana_data:

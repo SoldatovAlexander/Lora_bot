@@ -1,21 +1,17 @@
-# Python
 __pycache__/
 *.pyc
 .venv/
 .env
-.ipynb_checkpoints/
+.git/
 
-# HuggingFace/Transformers кеши
+# кэши HF
 .cache/
 **/.cache/
-hf_cache/
-transformers_cache/
 
+# большие веса и артефакты (монтируем volume'ом)
+**/*.safetensors
+**/*.bin
 
-
-# Логи и прочее
-logs/
+# логи
 *.log
-
-# Git
-.git/
+logs/
