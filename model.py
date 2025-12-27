@@ -14,34 +14,48 @@ logger = logging.getLogger("uii-llm-api")
 
 def resolve_adapter_dir() -> str:
     """
-    Возвращает директорию, где лежит adapter_config.json.
-    Если в ADAPTER_DIR файла нет — ищем в подпапках (maxdepth=3).
+    Ищет папку с adapter_config.json и возвращает путь к ней.
+
+    Поддерживает 2 режима:
+    1) Локально (venv): обычно ./model/LoRA_outputs или /home/.../model/LoRA_outputs
+    2) Docker: /app/model/LoRA_outputs (volume mount)
     """
-    raw = os.getenv("ADAPTER_DIR", "/app/model/LoRA_outputs").strip()
 
-    # Защита от относительных путей
-    if raw.startswith("./"):
-        raw = str(Path("/app") / raw[2:])
+    # 1) Берём из env (если задано)
+    raw = os.getenv("ADAPTER_DIR", "").strip()
 
-    base = Path(raw)
+    # 2) Если env не задан — выбираем дефолт по "контейнерности"
+    # Простая эвристика: в Docker обычно существует /.dockerenv
+    in_docker = Path("/.dockerenv").exists()
 
-    # 1) Прямой вариант
-    if (base / "adapter_config.json").exists():
-        logger.warning("MODEL: adapter_config found in %s", str(base))
+    if not raw:
+        raw = "/app/model/LoRA_outputs" if in_docker else "./model/LoRA_outputs"
+
+    # 3) Нормализуем относительные пути для локального режима
+    # Если запуск из корня проекта, ./model/LoRA_outputs корректен.
+    # Если запуск из другой папки — лучше поставить абсолютный путь через ADAPTER_DIR.
+    base = Path(raw).expanduser().resolve() if not raw.startswith("/app/") else Path(raw)
+
+    # 4) Быстрая проверка: файл в корне
+    if (base / "adapter_config.json").is_file():
+        logger.warning("MODEL: adapter_config found in %s", base)
         return str(base)
 
-    # 2) Ищем в подпапках
-    candidates = list(base.rglob("adapter_config.json"))
-    candidates = [p for p in candidates if p.is_file()]
-    if candidates:
-        # Берём первый найденный (можно улучшить выбор, но для учебного проекта достаточно)
-        adapter_dir = candidates[0].parent
-        logger.warning("MODEL: adapter_config found in subdir %s", str(adapter_dir))
-        return str(adapter_dir)
+    # 5) Ищем в подпапках (на 3 уровня)
+    if base.exists():
+        candidates = list(base.rglob("adapter_config.json"))
+        candidates = [p for p in candidates if p.is_file()]
+        if candidates:
+            adapter_dir = candidates[0].parent
+            logger.warning("MODEL: adapter_config found in subdir %s", adapter_dir)
+            return str(adapter_dir)
+
+    # 6) Диагностика: что реально есть
+    logger.error("MODEL: ADAPTER_DIR raw='%s', resolved='%s', exists=%s", raw, base, base.exists())
 
     raise FileNotFoundError(
         f"Не найден adapter_config.json в {base} и подпапках. "
-        f"Проверьте volume mount и переменную ADAPTER_DIR."
+        f"Проверьте ADAPTER_DIR и то, откуда вы запускаете проект."
     )
 
 
