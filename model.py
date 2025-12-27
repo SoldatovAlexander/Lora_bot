@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Optional, Tuple
-
+from pathlib import Path
 from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
@@ -9,34 +9,39 @@ from peft import PeftModel
 load_dotenv()
 
 BASE_MODEL_NAME = os.getenv("BASE_MODEL_NAME", "unsloth/llama-3-8b-Instruct-bnb-4bit")
-ADAPTER_DIR_ENV = os.getenv("ADAPTER_DIR", "./model/LoRA_outputs")
 
-# В Docker (и docker-compose) адаптеры монтируются сюда
-ADAPTER_DIR_DOCKER = "/app/model/adapters"
+logger = logging.getLogger("uii-llm-api")
 
-
-def resolve_adapter_dir(logger: logging.Logger) -> str:
+def resolve_adapter_dir() -> str:
     """
-    Определяем, где лежат адаптеры:
-    - в контейнере: /app/model/adapters
-    - локально: путь из ADAPTER_DIR (по умолчанию ./model/LoRA_outputs)
+    Возвращает директорию, где лежит adapter_config.json.
+    Если в ADAPTER_DIR файла нет — ищем в подпапках (maxdepth=3).
     """
-    docker_cfg = os.path.join(ADAPTER_DIR_DOCKER, "adapter_config.json")
-    local_cfg = os.path.join(ADAPTER_DIR_ENV, "adapter_config.json")
+    raw = os.getenv("ADAPTER_DIR", "/app/model/LoRA_outputs").strip()
 
-    if os.path.exists(docker_cfg):
-        logger.warning("MODEL: adapter dir resolved to Docker path: %s", ADAPTER_DIR_DOCKER)
-        return ADAPTER_DIR_DOCKER
+    # Защита от относительных путей
+    if raw.startswith("./"):
+        raw = str(Path("/app") / raw[2:])
 
-    if os.path.exists(local_cfg):
-        logger.warning("MODEL: adapter dir resolved to local path: %s", ADAPTER_DIR_ENV)
-        return ADAPTER_DIR_ENV
+    base = Path(raw)
 
-    # Если адаптеров нет, это критично — сервис не должен молча продолжать.
+    # 1) Прямой вариант
+    if (base / "adapter_config.json").exists():
+        logger.warning("MODEL: adapter_config found in %s", str(base))
+        return str(base)
+
+    # 2) Ищем в подпапках
+    candidates = list(base.rglob("adapter_config.json"))
+    candidates = [p for p in candidates if p.is_file()]
+    if candidates:
+        # Берём первый найденный (можно улучшить выбор, но для учебного проекта достаточно)
+        adapter_dir = candidates[0].parent
+        logger.warning("MODEL: adapter_config found in subdir %s", str(adapter_dir))
+        return str(adapter_dir)
+
     raise FileNotFoundError(
-        "Не найден adapter_config.json. "
-        "Положите предобученные адаптеры в ./model/LoRA_outputs (локально) "
-        "или смонтируйте их в /app/model/LoRA_outputs (Docker)."
+        f"Не найден adapter_config.json в {base} и подпапках. "
+        f"Проверьте volume mount и переменную ADAPTER_DIR."
     )
 
 
@@ -71,7 +76,7 @@ def load_model_and_tokenizer(logger: Optional[logging.Logger] = None):
     if logger is None:
         logger = logging.getLogger("model")
 
-    adapter_dir = resolve_adapter_dir(logger)
+    adapter_dir = resolve_adapter_dir()
 
     logger.warning("MODEL: BASE_MODEL_NAME=%s", BASE_MODEL_NAME)
     logger.warning("MODEL: ADAPTER_DIR=%s", adapter_dir)
