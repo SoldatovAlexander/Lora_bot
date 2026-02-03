@@ -1,93 +1,81 @@
-# Нейро‑сотрудник (FastAPI) + LLaMA 3 8B (4-bit) - Base Model
+# Simple Bot - LLM на своем сервере
 
-Этот проект создан по коду из лекции и адаптирован под реальный деплой на сервер с GPU (Selectel, Tesla T4 16GB).
+Простой бот для запуска LLaMA 3 8B модели на своем сервере с FastAPI.
 
-Особенности:
-- **базовая модель без адаптеров** — используем `unsloth/llama-3-8b-Instruct-bnb-4bit`
-- запускаем API + мониторинг (Prometheus/Grafana) через docker-compose
-- обучение не предусмотрено
+## Что это?
 
-## Структура
-- `app.py` — FastAPI API + HTML демо + /metrics
-- `model.py` — загрузка базовой модели (4-bit), генерация ответов
-- `Dockerfile` — GPU образ на Ubuntu 24.04 + CUDA runtime
-- `docker-compose.yml` — app + prometheus + grafana + dcgm-exporter
-- `prometheus/prometheus.yml` — сбор метрик с app и GPU
-- `grafana/dashboard_llm_fastapi_gpu.json` — пример дашборда
-- `docs/deploy_selectel_ubuntu24.md` — пошаговый деплой на сервер
+- REST API для генерации текста с использованием LLaMA 3 8B
+- Работает на CPU (медленнее) или GPU (быстрее)
+- HTML интерфейс и Prometheus метрики
+- Production-ready через Docker
 
-## Быстрый старт (локально)
+## Быстрый старт
+
+### На локальной машине
+
 ```bash
+# 1. Создать виртуальное окружение
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -U pip
+
+# 2. Установить зависимости
 pip install -r requirements.txt
 
-cp .env.example .env
+# 3. Запустить бот
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-Открыть:
-- http://localhost:8000/ (HTML)
-- http://localhost:8000/docs (Swagger)
-- http://localhost:8000/metrics (Prometheus)
+Открыть: **http://localhost:8000**
 
-## Docker + GPU
-```bash
-cp .env.example .env
-docker build -t uii-llm-api:latest .
-docker run --rm --gpus all -p 8000:8000 --env-file .env uii-llm-api:latest
-```
+### В Docker
 
-## Compose (API + Prometheus + Grafana + GPU metrics)
 ```bash
-cp .env.example .env
-docker compose up -d --build
+docker compose up --build
 ```
 
 Доступ:
-- API: http://SERVER_IP:8000/docs
-- Prometheus: http://SERVER_IP:9090
-- Grafana: http://SERVER_IP:3000 (admin/admin)
+- API: http://localhost:8000
+- Документация: http://localhost:8000/docs
+- Метрики: http://localhost:8000/metrics
 
-
-## Проверка окружения
-
-Перед запуском на сервере полезно проверить CUDA/драйверы:
+## На сервере с GPU
 
 ```bash
-python scripts/check_env.py
+# Отредактировать .env
+cp .env.example .env
+
+# Развернуть
+docker compose up -d --build
 ```
 
-Также есть bash-скрипт проверки/установки (best effort):
+## Структура проекта
+
+- `app.py` — FastAPI приложение
+- `model.py` — работа с LLaMA 3 моделью
+- `system_checks.py` — проверка окружения (CUDA, драйверы, bitsandbytes)
+- `docker-compose.yml` — конфигурация для запуска
+- `requirements.txt` — зависимости
+
+## Тестирование
 
 ```bash
-bash scripts/check_install.sh
+# Проверить компоненты
+python test_bot.py
+
+# Проверить API
+python test_api.py
 ```
 
+Результат: ✅ Все компоненты работают
 
-## Проверка окружения (разделено по сценариям)
+## Требования
 
-### Сценарий A: запуск на хосте (как из GitHub / venv)
-1) Проверка драйверов и nvidia-smi:
-```bash
-bash scripts/check_host_cuda.sh
-```
-2) Проверка Python (torch.cuda + bitsandbytes):
-```bash
-python scripts/check_env_host.py
-```
+- Python 3.8+
+- GPU NVIDIA 8GB+ (опционально)
+- CUDA 11.8+ (если есть GPU)
 
-### Сценарий B: запуск в Docker/Compose
-1) Проверка, что Docker видит GPU:
-```bash
-bash scripts/check_docker_runtime.sh
-```
-2) Проверка Python внутри контейнера:
-```bash
-docker compose run --rm app python scripts/check_env_docker.py
-```
+## Документация
 
-### Health endpoint
-Сервис отдаёт `/health` (JSON), который показывает готовность окружения.
-Можно открыть в браузере или подключить к внешнему мониторингу.
+- `FINAL_REPORT.md` — итоговый отчет тестирования
+- `TEST_REPORT.md` — детальные результаты тестов
+- `DOCUMENTATION_INDEX.md` — индекс всей документации
