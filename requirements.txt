@@ -8,9 +8,8 @@ python-dotenv==1.0.1
 # Pydantic схемы
 pydantic==2.9.2
 
-# LLM стек (инференс)
+# LLM стек (инференс - базовая модель)
 transformers==4.57.3
-peft==0.18.0
 accelerate==1.12.0
 bitsandbytes==0.49.0
 torch==2.9.1

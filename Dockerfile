@@ -2,6 +2,7 @@
 FROM nvidia/cuda:12.6.0-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DOCKER_ENV=true
 WORKDIR /app
 
 # ВАЖНО:

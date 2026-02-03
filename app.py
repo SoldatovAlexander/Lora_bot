@@ -40,7 +40,7 @@ DEFAULT_TEMPERATURE = float(os.getenv("DEFAULT_TEMPERATURE", "0.7"))
 # FastAPI init
 # -----------------------
 app = FastAPI(
-    title="Нейро‑сотрудник (LLaMA 3 8B + QLoRA adapters)",
+    title="Нейро‑сотрудник (LLaMA 3 8B Base Model)",
     version="1.0.0",
 )
 
@@ -78,7 +78,7 @@ if bnb.ok:
 else:
     logger.error("CHECK FAIL: %s | %s", bnb.message, bnb.details or "")
 
-logger.warning("STARTUP: загрузка базовой модели + предобученных QLoRA/LoRA адаптеров (один раз)")
+logger.warning("STARTUP: загрузка базовой модели (один раз)")
 try:
     MODEL, TOKENIZER = load_model_and_tokenizer(logger=logger)
     logger.warning("STARTUP: модель успешно загружена, сервис готов")
@@ -130,13 +130,13 @@ def health():
     """
     Health endpoint for monitoring.
     Возвращает JSON с проверками окружения.
-    По умолчанию отдаём docker-проверки, если внутри контейнера видим /app (косвенный признак),
-    иначе — host-проверки.
+    Определяет контейнер через переменную окружения DOCKER_ENV или через наличие /.dockerenv файла.
 
     Это удобно в учебной практике: студент сразу видит, что именно не готово.
     """
-    inside_docker = os.path.exists("/.dockerenv") or os.path.isdir("/app")
-    return summarize_checks_docker() if inside_docker else summarize_checks_host()
+    # Проверяем наличие переменной окружения или файла /.dockerenv
+    is_docker = os.getenv("DOCKER_ENV", "").lower() == "true" or os.path.isfile("/.dockerenv")
+    return summarize_checks_docker() if is_docker else summarize_checks_host()
 
 # -----------------------
 # Minimal HTML + JS UI
@@ -158,7 +158,7 @@ HTML = """<!doctype html>
   </style>
 </head>
 <body>
-  <h1>Нейро‑сотрудник (LLaMA 3 8B + QLoRA)</h1>
+  <h1>Нейро‑сотрудник (LLaMA 3 8B Base Model)</h1>
   <p><small>Демо‑страница: запрос уходит на <code>/generate</code>. Метрики: <code>/metrics</code>.</small></p>
 
   <label>Вопрос:</label>

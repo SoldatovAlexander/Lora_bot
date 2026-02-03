@@ -1,22 +1,20 @@
-# Нейро‑сотрудник (FastAPI) + LLaMA 3 8B (4-bit) + предобученные QLoRA адаптеры
+# Нейро‑сотрудник (FastAPI) + LLaMA 3 8B (4-bit) - Base Model
 
 Этот проект создан по коду из лекции и адаптирован под реальный деплой на сервер с GPU (Selectel, Tesla T4 16GB).
 
-Важно:
-- **обучения нет**
-- мы берём базовую модель `unsloth/llama-3-8b-Instruct-bnb-4bit`
-- накладываем **предобученные** QLoRA/LoRA адаптеры из `./model/LoRA_outputs`
+Особенности:
+- **базовая модель без адаптеров** — используем `unsloth/llama-3-8b-Instruct-bnb-4bit`
 - запускаем API + мониторинг (Prometheus/Grafana) через docker-compose
+- обучение не предусмотрено
 
 ## Структура
 - `app.py` — FastAPI API + HTML демо + /metrics
-- `model.py` — загрузка модели (4-bit) и адаптеров (PEFT), генерация
+- `model.py` — загрузка базовой модели (4-bit), генерация ответов
 - `Dockerfile` — GPU образ на Ubuntu 24.04 + CUDA runtime
 - `docker-compose.yml` — app + prometheus + grafana + dcgm-exporter
 - `prometheus/prometheus.yml` — сбор метрик с app и GPU
 - `grafana/dashboard_llm_fastapi_gpu.json` — пример дашборда
 - `docs/deploy_selectel_ubuntu24.md` — пошаговый деплой на сервер
-- `model/adapters/` — сюда кладём адаптеры (и токенайзер, если сохранён рядом)
 
 ## Быстрый старт (локально)
 ```bash
@@ -38,7 +36,7 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 ```bash
 cp .env.example .env
 docker build -t uii-llm-api:latest .
-docker run --rm --gpus all -p 8000:8000   -v $(pwd)/model/adapters:/app/model/adapters:ro   --env-file .env   uii-llm-api:latest
+docker run --rm --gpus all -p 8000:8000 --env-file .env uii-llm-api:latest
 ```
 
 ## Compose (API + Prometheus + Grafana + GPU metrics)

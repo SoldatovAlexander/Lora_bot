@@ -54,15 +54,7 @@ git clone <YOUR_GITHUB_REPO_URL>
 cd <REPO_FOLDER>
 ```
 
-## 6) Кладём адаптеры в проект
-Скопируйте папку с адаптерами в:
-`./model/adapters/`
-
-Проверьте наличие:
-- adapter_config.json
-- adapter_model.safetensors (или .bin)
-
-## 7) Настраиваем .env
+## 6) Настраиваем .env
 ```bash
 cp .env.example .env
 nano .env
@@ -70,12 +62,12 @@ nano .env
 Проверьте, что:
 `BASE_MODEL_NAME=unsloth/llama-3-8b-Instruct-bnb-4bit`
 
-## 8) Запуск через docker-compose
+## 7) Запуск через docker-compose
 ```bash
 docker compose up -d --build
 ```
 
-## 9) Проверяем сервисы
+## 8) Проверяем сервисы
 - FastAPI docs: http://SERVER_IP:8000/docs
 - Web UI: http://SERVER_IP:8000/
 - Metrics: http://SERVER_IP:8000/metrics

@@ -9,11 +9,9 @@ services:
     environment:
       LOG_LEVEL: "WARNING"
       BASE_MODEL_NAME: "unsloth/llama-3-8b-Instruct-bnb-4bit"
-      # ВАЖНО: у вас адаптеры лежат в model/LoRA_outputs
-      ADAPTER_DIR: "/app/model/LoRA_outputs"
+      DOCKER_ENV: "true"
     volumes:
-      - ./model/LoRA_outputs:/app/model/LoRA_outputs:ro
-      # (опционально) кэш HF, чтобы не качать заново
+      # кэш HF, чтобы не качать заново
       - ./hf_cache:/root/.cache/huggingface
     deploy:
       resources:
