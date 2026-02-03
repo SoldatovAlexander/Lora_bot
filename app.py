@@ -27,11 +27,7 @@ logger = logging.getLogger("uii-llm-api")
 # -----------------------
 # System prompt (as provided)
 # -----------------------
-SYSTEM_PROMPT = (
-    "Вы профессиональный менеджер поддержки в чате компании (компания продает курсы по AI) "
-    "Университет Искусственного интеллекта.\n"
-    "Ответьте на вопрос так, чтобы человек захотел после ответа купить обучение. Отвечайте на русском языке!"
-)
+SYSTEM_PROMPT = ( )
 
 DEFAULT_MAX_NEW_TOKENS = int(os.getenv("DEFAULT_MAX_NEW_TOKENS", "180"))
 DEFAULT_TEMPERATURE = float(os.getenv("DEFAULT_TEMPERATURE", "0.7"))
